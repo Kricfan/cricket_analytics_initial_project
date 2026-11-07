@@ -1,0 +1,978 @@
+<title>Cricket Analytics Code Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky contents rail on the left, one reading column on the right;
+   code walkthroughs pair a code chunk with its plain-English note. */
+:root {
+  --bg: #f5f7f3;
+  --surface: #ffffff;
+  --ink: #17201a;
+  --ink-soft: #4a564d;
+  --line: #d9e0d7;
+  --pitch: #1f6b45;          /* main accent: scorebook green */
+  --pitch-wash: #e3efe7;
+  --ball: #b3322a;           /* used only for "watch out" notes */
+  --ball-wash: #f7e6e4;
+  --code-bg: #f0f3ee;
+  --code-ink: #1d2a21;
+  --hl-key: #8a2f86;
+  --hl-str: #1f6b45;
+  --hl-com: #7a8679;
+  --hl-num: #a3501b;
+  --hl-fn: #1d5a9e;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-code: "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1411; --surface: #161d18; --ink: #e5ebe5; --ink-soft: #a9b5ab;
+    --line: #2a352d; --pitch: #63c08d; --pitch-wash: #1a2c21;
+    --ball: #e8776d; --ball-wash: #2d1b19; --code-bg: #121915;
+    --code-ink: #dfe7df; --hl-key: #d78fd3; --hl-str: #7fd3a1;
+    --hl-com: #7c887e; --hl-num: #e6a173; --hl-fn: #8fbcf0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1411; --surface: #161d18; --ink: #e5ebe5; --ink-soft: #a9b5ab;
+  --line: #2a352d; --pitch: #63c08d; --pitch-wash: #1a2c21;
+  --ball: #e8776d; --ball-wash: #2d1b19; --code-bg: #121915;
+  --code-ink: #dfe7df; --hl-key: #d78fd3; --hl-str: #7fd3a1;
+  --hl-com: #7c887e; --hl-num: #e6a173; --hl-fn: #8fbcf0;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 80px;
+}
+a { color: var(--pitch); }
+a:focus-visible, summary:focus-visible, button:focus-visible {
+  outline: 2px solid var(--pitch); outline-offset: 2px; border-radius: 3px;
+}
+
+.page {
+  max-width: 1180px; margin: 0 auto;
+  display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 48px;
+}
+@media (max-width: 900px) { .page { grid-template-columns: minmax(0, 1fr); gap: 24px; } }
+
+/* Contents rail */
+.rail { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); align-self: start; }
+@media (max-width: 900px) { .rail { position: static; } }
+.rail h2 {
+  font-family: var(--font-display); font-size: 13px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-soft); margin: 0 0 10px;
+}
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rail a {
+  display: block; text-decoration: none; color: var(--ink-soft);
+  padding: 5px 10px; border-radius: 6px; font-size: 15px; line-height: 1.35;
+}
+.rail a:hover { background: var(--pitch-wash); color: var(--ink); }
+.rail .file { font-family: var(--font-code); font-size: 13px; }
+.rail .group { margin-top: 14px; font-size: 12px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-soft); padding-left: 10px; }
+
+main { min-width: 0; }
+section { margin-bottom: 72px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.15; }
+h1 { font-size: clamp(34px, 5vw, 52px); font-weight: 800; margin: 0 0 12px; letter-spacing: -.02em; }
+h2 { font-size: 30px; font-weight: 800; margin: 0 0 8px; letter-spacing: -.01em; }
+h3 { font-size: 20px; font-weight: 600; margin: 32px 0 8px; }
+p, li { max-width: 68ch; }
+.lede { font-size: 20px; color: var(--ink-soft); max-width: 60ch; }
+.eyebrow {
+  font-family: var(--font-code); font-size: 14px; color: var(--pitch);
+  margin: 0 0 6px; overflow-wrap: anywhere;
+}
+code { font-family: var(--font-code); font-size: .88em; background: var(--code-bg);
+  padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+
+/* "In one sentence" + "Think of it as" summary for each file */
+.summary {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 10px;
+  overflow: hidden; margin: 18px 0 8px;
+}
+.summary > div { background: var(--surface); padding: 14px 18px; min-width: 0; }
+.summary b { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-soft); margin-bottom: 4px; font-weight: 700; }
+@media (max-width: 640px) { .summary { grid-template-columns: 1fr; } }
+
+/* Pipeline diagram */
+.pipeline { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 24px 0; }
+.stage {
+  flex: 1 1 150px; min-width: 0; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+  text-decoration: none; color: var(--ink);
+}
+.stage:hover { border-color: var(--pitch); }
+.stage .what { font-family: var(--font-code); font-size: 12px; color: var(--pitch); overflow-wrap: anywhere; }
+.stage .name { font-weight: 700; display: block; margin: 2px 0; }
+.stage .does { font-size: 14px; color: var(--ink-soft); line-height: 1.4; }
+.arrow { align-self: center; color: var(--ink-soft); font-size: 20px; }
+@media (max-width: 640px) {
+  .pipeline { flex-direction: column; }
+  .arrow { transform: rotate(90deg); align-self: center; }
+}
+
+/* Code walkthrough: code chunk on the left, explanation on the right */
+.walk { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 16px 0 24px; background: var(--surface); }
+.walk .cap { padding: 10px 16px; font-size: 14px; color: var(--ink-soft);
+  border-bottom: 1px solid var(--line); background: var(--surface); }
+.walk .cap code { background: transparent; padding: 0; }
+.step { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); border-top: 1px solid var(--line); }
+.walk > .step:first-child, .walk .cap + .step { border-top: 0; }
+.step pre {
+  margin: 0; padding: 14px 16px; background: var(--code-bg); overflow-x: auto;
+  font-family: var(--font-code); font-size: 13.5px; line-height: 1.55; color: var(--code-ink);
+}
+.step pre code { background: transparent; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.step .note { padding: 14px 18px; font-size: 15.5px; line-height: 1.55; min-width: 0; }
+.step .note p { margin: 0 0 8px; }
+.step .note p:last-child { margin-bottom: 0; }
+@media (max-width: 760px) { .step { grid-template-columns: minmax(0, 1fr); } }
+
+/* Plain code block */
+pre.block { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; font-family: var(--font-code); font-size: 13.5px;
+  line-height: 1.55; color: var(--code-ink); }
+pre.block code { background: transparent; padding: 0; overflow-wrap: normal; }
+
+/* Syntax colours (highlight.js classes) */
+.hljs-keyword, .hljs-built_in.hljs-keyword { color: var(--hl-key); font-weight: 600; }
+.hljs-string { color: var(--hl-str); }
+.hljs-comment { color: var(--hl-com); font-style: italic; }
+.hljs-number, .hljs-literal { color: var(--hl-num); }
+.hljs-title, .hljs-built_in { color: var(--hl-fn); }
+.hljs-meta { color: var(--hl-num); }
+
+/* Callouts */
+.callout { border-radius: 10px; padding: 14px 18px; margin: 18px 0; max-width: 72ch; }
+.callout p { margin: 0; }
+.callout.idea { background: var(--pitch-wash); }
+.callout.watch { background: var(--ball-wash); }
+.callout b.tag { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; display: block; margin-bottom: 2px; }
+.callout.idea b.tag { color: var(--pitch); }
+.callout.watch b.tag { color: var(--ball); }
+
+/* Glossary */
+.glossary { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin: 18px 0; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.term dt { font-family: var(--font-code); font-weight: 600; color: var(--pitch); font-size: 14.5px; overflow-wrap: anywhere; }
+.term dd { margin: 4px 0 0; font-size: 15.5px; line-height: 1.5; }
+.term dd code { font-size: .85em; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; background: var(--surface); }
+th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+thead th { border-top: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+td:first-child { white-space: nowrap; }
+
+/* Trace (follow one number) */
+.trace { list-style: none; padding: 0; margin: 20px 0; counter-reset: t; display: grid; gap: 0; }
+.trace li { counter-increment: t; position: relative; padding: 0 0 22px 46px; max-width: none; }
+.trace li::before {
+  content: counter(t); position: absolute; left: 0; top: 0; width: 30px; height: 30px;
+  border-radius: 50%; background: var(--pitch); color: var(--bg); font-weight: 700;
+  display: grid; place-items: center; font-size: 15px;
+}
+.trace li::after { content: ""; position: absolute; left: 14px; top: 32px; bottom: 4px; width: 2px; background: var(--line); }
+.trace li:last-child::after { display: none; }
+.trace .where { font-family: var(--font-code); font-size: 13px; color: var(--ink-soft); display: block; overflow-wrap: anywhere; }
+.trace .val { font-family: var(--font-code); font-weight: 600; background: var(--pitch-wash); padding: 1px 6px; border-radius: 4px; }
+
+/* Exercises and quiz */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin: 10px 0; max-width: 78ch; }
+summary { cursor: pointer; padding: 12px 16px; font-weight: 700; }
+details > div { padding: 0 16px 14px; }
+details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+
+.filetree { font-family: var(--font-code); font-size: 14px; line-height: 1.7; }
+.filetree .dim { color: var(--ink-soft); }
+</style>
+
+<div class="page">
+  <nav class="rail" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#start">How to use this guide</a></li>
+      <li><a href="#big-picture">The big picture</a></li>
+      <li><a href="#python-ideas">Python ideas you'll meet</a></li>
+      <li><a href="#cricket-rules">Cricket rules in the code</a></li>
+      <li class="group">The files</li>
+      <li><a class="file" href="#combined-stats">combined stats.py</a></li>
+      <li><a class="file" href="#data-loader">data_loader.py</a></li>
+      <li><a class="file" href="#analysis">analysis.py</a></li>
+      <li><a class="file" href="#charts">charts.py</a></li>
+      <li><a class="file" href="#app">app.py</a></li>
+      <li><a class="file" href="#small-files">Settings files</a></li>
+      <li class="group">Practise</li>
+      <li><a href="#trace">Follow one number</a></li>
+      <li><a href="#exercises">Try it yourself</a></li>
+      <li><a href="#quiz">Check your understanding</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <!-- ================================================================ -->
+    <section id="start">
+      <p class="eyebrow">cricket_analytics_initial_project</p>
+      <h1>How your cricket project works</h1>
+      <p class="lede">A walk through every file, explaining what each one does and how its main code works in plain English. You don't need to understand every line to follow it.</p>
+      <p>Read it in this order:</p>
+      <ol>
+        <li><b>The big picture</b> shows how the files hand data to each other. Start here.</li>
+        <li><b>Python ideas</b> and <b>Cricket rules</b> are short glossaries. Skim them now and come back when something looks unfamiliar.</li>
+        <li><b>The files</b> go one at a time. Each code chunk sits next to an explanation of what it does.</li>
+        <li><b>Follow one number</b> traces Virat Kohli's career runs from the raw data to the screen. It ties everything together.</li>
+        <li><b>Try it yourself</b> gives you small, safe changes to make. Changing code and seeing what happens is the fastest way to learn.</li>
+      </ol>
+      <div class="callout idea">
+        <b class="tag">Tip</b>
+        <p>Open the real files next to this page. The code shown here is copied from them, and some long chunks are shortened. Where that happens, a <code># ...</code> comment marks the gap.</p>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="big-picture">
+      <h2>The big picture</h2>
+      <p>The project is a pipeline: data goes in at one end, gets cleaned and summarised step by step, and comes out as charts in your browser. Each file has one job and passes its result to the next.</p>
+
+      <div class="pipeline" role="list">
+        <a class="stage" role="listitem" href="#combined-stats">
+          <span class="what">data/t20_jsons/*.json</span>
+          <span class="name">5,845 match files</span>
+          <span class="does">Every ball of every T20 international, from Cricsheet.</span>
+        </a>
+        <span class="arrow" aria-hidden="true">→</span>
+        <a class="stage" role="listitem" href="#combined-stats">
+          <span class="what">combined stats.py</span>
+          <span class="name">Combiner</span>
+          <span class="does">Adds up every ball into totals per player.</span>
+        </a>
+        <span class="arrow" aria-hidden="true">→</span>
+        <a class="stage" role="listitem" href="#data-loader">
+          <span class="what">data/output/*.csv</span>
+          <span class="name">Clean tables</span>
+          <span class="does">One row per player, plus one row per player per match.</span>
+        </a>
+        <span class="arrow" aria-hidden="true">→</span>
+        <a class="stage" role="listitem" href="#analysis">
+          <span class="what">dashboard/*.py</span>
+          <span class="name">Dashboard</span>
+          <span class="does">Loads the tables, analyses them and draws the charts.</span>
+        </a>
+      </div>
+
+      <p>The combiner only needs to run once (or again when you download new matches). The dashboard runs every time you open it. Inside the dashboard, four files split the work:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>File</th><th>Its one job</th><th>Uses</th></tr></thead>
+          <tbody>
+            <tr><td><a href="#data-loader"><code>data_loader.py</code></a></td><td>Read the CSV files into memory</td><td>pandas</td></tr>
+            <tr><td><a href="#analysis"><code>analysis.py</code></a></td><td>Do the maths: totals, averages, rankings, comparisons</td><td>pandas, numpy</td></tr>
+            <tr><td><a href="#charts"><code>charts.py</code></a></td><td>Turn tables of numbers into charts</td><td>Plotly</td></tr>
+            <tr><td><a href="#app"><code>app.py</code></a></td><td>Lay out the page and connect the other three</td><td>Streamlit</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout idea">
+        <b class="tag">Why split it up?</b>
+        <p>When something looks wrong you know where to look. A wrong number means <code>analysis.py</code>, a chart in the wrong colour means <code>charts.py</code>, and something in the wrong place on the page means <code>app.py</code>. This is called <b>separation of concerns</b>.</p>
+      </div>
+
+      <h3>Where everything lives</h3>
+      <pre class="block filetree"><code>cricket_analytics_initial_project/
+├── data/
+│   ├── t20_jsons/             <span class="dim"># raw match files (not on GitHub)</span>
+│   ├── output/                <span class="dim"># made by the combiner (not on GitHub)</span>
+│   └── python files/
+│       └── combined stats.py  <span class="dim"># step 1: combine the data</span>
+├── dashboard/
+│   ├── app.py                 <span class="dim"># the web page</span>
+│   ├── data_loader.py         <span class="dim"># reads the CSVs</span>
+│   ├── analysis.py            <span class="dim"># the maths</span>
+│   └── charts.py              <span class="dim"># the charts</span>
+├── .streamlit/config.toml     <span class="dim"># dashboard colours</span>
+├── requirements.txt           <span class="dim"># packages to install</span>
+├── .gitignore                 <span class="dim"># files git should skip</span>
+└── README.md                  <span class="dim"># setup instructions</span></code></pre>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="python-ideas">
+      <h2>Python ideas you'll meet</h2>
+      <p>These come up again and again in the project. Each one has a short example.</p>
+      <dl class="glossary">
+        <div class="term"><dt>variable</dt><dd>A name for a value. <code>runs = 4</code> stores 4 under the name <code>runs</code>.</dd></div>
+        <div class="term"><dt>function (def)</dt><dd>A named, reusable recipe. <code>def safe_div(a, b):</code> creates one; <code>safe_div(10, 2)</code> runs it. <code>return</code> hands the answer back.</dd></div>
+        <div class="term"><dt>docstring</dt><dd>The text in <code>"""triple quotes"""</code> just under a <code>def</code>. It describes what the function does and has no effect on how it runs.</dd></div>
+        <div class="term"><dt>comment (#)</dt><dd>Everything after <code>#</code> on a line is a note for humans. Python ignores it.</dd></div>
+        <div class="term"><dt>dictionary {}</dt><dd>Labelled values: <code>{"runs": 45, "balls": 30}</code>. Read one with <code>d["runs"]</code>. The match files are giant nested dictionaries.</dd></div>
+        <div class="term"><dt>list []</dt><dd>An ordered collection: <code>["India", "Australia"]</code>. <code>teams[0]</code> is the first item.</dd></div>
+        <div class="term"><dt>for loop</dt><dd>Repeat for each item: <code>for ball in deliveries:</code> runs the indented code once per ball.</dd></div>
+        <div class="term"><dt>if / elif / else</dt><dd>Run code only when something is true. <code>if runs == 4:</code> … <code>elif runs == 6:</code> …</dd></div>
+        <div class="term"><dt>+=</dt><dd>Add to what's already there. <code>total += 4</code> is short for <code>total = total + 4</code>.</dd></div>
+        <div class="term"><dt>import</dt><dd>Bring in code from elsewhere: a package (<code>import pandas as pd</code>) or one of your own files (<code>import analysis</code>).</dd></div>
+        <div class="term"><dt>f-string</dt><dd>A string with values slotted in: <code>f"{runs} runs"</code> becomes <code>"45 runs"</code>. <code>{x:,}</code> adds commas: 1,331,673.</dd></div>
+        <div class="term"><dt>constant</dt><dd>A variable in CAPITALS, like <code>OUTPUT_DIR</code>. By convention it's set once at the top of a file and never changed.</dd></div>
+        <div class="term"><dt>DataFrame</dt><dd>pandas' name for a table, like a spreadsheet in memory. <code>df["runs"]</code> is one column, called a <b>Series</b>.</dd></div>
+        <div class="term"><dt>groupby</dt><dd>Split a table into groups and summarise each one. "Total runs per player" is <code>groupby("player_id")["runs"].sum()</code>.</dd></div>
+        <div class="term"><dt>@decorator</dt><dd>A line starting with <code>@</code> above a function adds extra behaviour to it. <code>@st.cache_data</code> makes Streamlit remember the result.</dd></div>
+        <div class="term"><dt>None / NaN</dt><dd>"No value". Used where a number can't exist, such as the batting average of someone never dismissed.</dd></div>
+      </dl>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="cricket-rules">
+      <h2>Cricket rules in the code</h2>
+      <p>Much of the code exists to apply the official scoring rules correctly. When something looks oddly specific, it's usually one of these:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Term</th><th>Rule</th><th>What the code does</th></tr></thead>
+          <tbody>
+            <tr><td>Wide</td><td>Doesn't count as a ball faced or a legal ball</td><td>Skips adding to <code>balls_faced</code> and <code>balls_bowled</code></td></tr>
+            <tr><td>No-ball</td><td>Counts as faced by the batter, but isn't a legal ball for the bowler</td><td>Adds to <code>balls_faced</code> but not <code>balls_bowled</code></td></tr>
+            <tr><td>Byes / leg byes</td><td>Runs for the team, not charged to the bowler</td><td>Left out of <code>runs_conceded</code></td></tr>
+            <tr><td>Run out</td><td>A dismissal, but not the bowler's wicket</td><td>Listed in <code>NOT_BOWLER_WICKETS</code></td></tr>
+            <tr><td>Retired hurt</td><td>The batter leaves but isn't out</td><td>Listed in <code>NOT_OUT_KINDS</code></td></tr>
+            <tr><td>Maiden</td><td>A full over by one bowler with no runs conceded</td><td>Checked at the end of each over</td></tr>
+            <tr><td>Super over</td><td>Tie-breaker; not included in official career stats</td><td>Skipped entirely</td></tr>
+            <tr><td>Batting average</td><td>Runs ÷ times out</td><td><code>runs / dismissals</code></td></tr>
+            <tr><td>Strike rate</td><td>Runs per 100 balls faced</td><td><code>runs / balls_faced × 100</code></td></tr>
+            <tr><td>Economy</td><td>Runs conceded per over (6 balls)</td><td><code>runs_conceded / balls_bowled × 6</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="combined-stats">
+      <p class="eyebrow">data/python files/combined stats.py</p>
+      <h2>The combiner</h2>
+      <div class="summary">
+        <div><b>In one sentence</b>Reads all 5,845 match files ball by ball and adds everything up into clean stats for every player.</div>
+        <div><b>Think of it as</b>A scorer going through every scorebook ever written and filling in one career card per player.</div>
+      </div>
+      <p>It runs as four stages, each its own function:</p>
+      <ol>
+        <li><code>process_match</code> reads one match file and works out each player's stats for that match.</li>
+        <li><code>build_players</code> runs <code>process_match</code> on every file and adds the results into career totals.</li>
+        <li><code>format_player</code> turns raw totals into the tidy template (averages, strike rates, best figures).</li>
+        <li><code>main</code> runs the steps above and saves the three output files.</li>
+      </ol>
+
+      <h3>1. Rules written down once at the top</h3>
+      <div class="walk">
+        <div class="step">
+<pre><code class="language-python">JSON_DIR = DATA_DIR / "t20_jsons"
+OUTPUT_DIR = DATA_DIR / "output"
+
+NOT_BOWLER_WICKETS = {
+    "run out", "retired hurt", "retired out", "retired not out",
+    "obstructing the field", "timed out", "handled the ball",
+}
+NOT_OUT_KINDS = {"retired hurt", "retired not out"}</code></pre>
+          <div class="note">
+            <p><b>Constants.</b> Folder locations and cricket rules are written once here, so the rest of the code can just refer to them by name.</p>
+            <p>The <code>/</code> between paths joins folder names, like typing <code>data\output</code>.</p>
+            <p>The curly brackets make a <b>set</b>, a list that's quick to check with <code>in</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>2. A blank scorecard for each player</h3>
+      <div class="walk">
+        <div class="step">
+<pre><code class="language-python">def new_match_line():
+    """Blank stats for one player in one match."""
+    return {
+        "batted": False, "runs": 0, "balls_faced": 0,
+        "fours": 0, "sixes": 0, "out": False,
+        "balls_bowled": 0, "runs_conceded": 0, "wickets": 0,
+        "catches": 0, "stumpings": 0, "run_outs": 0,
+        # ... plus a few more counters
+    }</code></pre>
+          <div class="note">
+            <p>Returns a fresh dictionary with every counter at zero, like an empty row on a scorecard.</p>
+            <p>Later the code uses <code>defaultdict(new_match_line)</code>. That means: whenever a player we haven't seen yet is mentioned, automatically give them a blank scorecard.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>3. Going through every ball</h3>
+      <p>This is the heart of the project. A match file is nested: a match has innings, an innings has overs, an over has deliveries. So there's a loop inside a loop inside a loop.</p>
+      <div class="walk">
+        <div class="cap">Inside <code>process_match(path)</code></div>
+        <div class="step">
+<pre><code class="language-python">with open(path, encoding="utf-8") as f:
+    match = json.load(f)</code></pre>
+          <div class="note"><p>Opens one match file and turns its JSON text into a Python dictionary called <code>match</code>.</p></div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">for innings in match.get("innings", []):
+    if innings.get("super_over"):
+        continue  # super overs don't count
+
+    for over in innings.get("overs", []):
+        for ball in over.get("deliveries", []):</code></pre>
+          <div class="note">
+            <p>Three loops in a row: every innings, then every over in it, then every ball in that over.</p>
+            <p><code>continue</code> means "skip the rest and move on to the next one". Super overs get skipped.</p>
+            <p><code>.get("innings", [])</code> means "give me the innings, or an empty list if there aren't any", so a strange file can't crash the script.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">batter, bowler = pid(ball["batter"]), pid(ball["bowler"])
+runs, extras = ball["runs"], ball.get("extras", {})
+is_wide, is_noball = "wides" in extras, "noballs" in extras
+legal = not is_wide and not is_noball</code></pre>
+          <div class="note">
+            <p>Pulls out who batted, who bowled, and the runs.</p>
+            <p><code>pid()</code> swaps the player's name for their unique ID. Two different players can share a name, but never an ID.</p>
+            <p><code>legal</code> is <code>True</code> only for a proper delivery (not a wide, not a no-ball).</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">bat = lines[batter]
+bat["runs"] += runs["batter"]
+if not is_wide:
+    bat["balls_faced"] += 1</code></pre>
+          <div class="note">
+            <p><b>Batting.</b> Gets the batter's scorecard and adds the runs they hit.</p>
+            <p>The ball counts as faced unless it was a wide.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">bowl = lines[bowler]
+conceded = (runs["batter"] + extras.get("wides", 0)
+            + extras.get("noballs", 0))
+bowl["runs_conceded"] += conceded
+if legal:
+    bowl["balls_bowled"] += 1</code></pre>
+          <div class="note">
+            <p><b>Bowling.</b> The bowler is charged for runs off the bat, wides and no-balls, but not byes or leg byes.</p>
+            <p>Only legal balls count towards their overs.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">for wicket in ball.get("wickets", []):
+    kind = wicket["kind"]
+    out = lines[pid(wicket["player_out"])]
+    if kind not in NOT_OUT_KINDS:
+        out["out"] = True
+    if kind not in NOT_BOWLER_WICKETS:
+        bowl["wickets"] += 1</code></pre>
+          <div class="note">
+            <p><b>Wickets.</b> If a wicket fell on this ball, mark the batter as out (unless they retired hurt), and credit the bowler (unless it was a run out or similar).</p>
+            <p>This is where the rule sets from the top of the file get used.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>4. Adding matches into careers</h3>
+      <div class="walk">
+        <div class="cap">Inside <code>build_players()</code>, shortened</div>
+        <div class="step">
+<pre><code class="language-python">files = sorted(JSON_DIR.glob("*.json"))
+
+for i, path in enumerate(files, 1):
+    try:
+        match, lines, names = process_match(path)
+    except (json.JSONDecodeError, KeyError) as e:
+        print(f"  Skipping {path.name}: {e}")
+        continue</code></pre>
+          <div class="note">
+            <p><code>glob("*.json")</code> finds every file ending in <code>.json</code>.</p>
+            <p><code>try / except</code> is a safety net. If one file is broken, it prints a message and carries on instead of stopping the whole run.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">    for player_id, line in lines.items():
+        p = players.setdefault(player_id, {...})
+        for key in ("runs", "balls_faced", "wickets", ...):
+            p["totals"][key] += line[key]</code></pre>
+          <div class="note">
+            <p>For each player in this match, find their career record (or create one with <code>setdefault</code> if this is their first match), then add this match's numbers onto their running totals.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>5. The clean template</h3>
+      <div class="walk">
+        <div class="cap">Inside <code>format_player(p)</code>, shortened</div>
+        <div class="step">
+<pre><code class="language-python">def safe_div(a, b, digits=2):
+    return round(a / b, digits) if b else None</code></pre>
+          <div class="note">
+            <p>Division that can't crash. Dividing by zero is an error in Python, so if <code>b</code> is 0 it returns <code>None</code> instead. A player who was never out has no batting average.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">"batting": {
+    "innings": p["innings_batted"],
+    "runs": t["runs"],
+    "average": safe_div(t["runs"], t["dismissals"]),
+    "strike_rate": safe_div(t["runs"] * 100,
+                            t["balls_faced"]),
+    # ...
+},
+"bowling": { ... },
+"fielding": { ... },</code></pre>
+          <div class="note">
+            <p>Builds the readable record you see in <code>players_combined.json</code>, grouped into batting, bowling and fielding.</p>
+            <p>Averages and rates are calculated here from the raw totals.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>6. Saving the results</h3>
+      <p><code>main()</code> calls the steps above, sorts players by runs, and writes three files to <code>data/output/</code>:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>File</th><th>Shape</th><th>Good for</th></tr></thead>
+          <tbody>
+            <tr><td><code>players_combined.json</code></td><td>One nested record per player</td><td>Reading a player's whole career</td></tr>
+            <tr><td><code>player_career_stats.csv</code></td><td>One row per player (7,605 rows)</td><td>Excel, and the Player tab's career cards</td></tr>
+            <tr><td><code>player_match_stats.csv</code></td><td>One row per player per match (129,097 rows)</td><td>All the dashboard analysis, because it can be filtered by year and team</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The last lines, <code>if __name__ == "__main__": main()</code>, mean "only run <code>main()</code> when this file is run directly", not when another file imports it.</p>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="data-loader">
+      <p class="eyebrow">dashboard/data_loader.py</p>
+      <h2>The data loader</h2>
+      <div class="summary">
+        <div><b>In one sentence</b>Opens the two CSV files, tidies a few columns, and keeps them in memory so the dashboard stays fast.</div>
+        <div><b>Think of it as</b>Fetching the scorebooks from the shelf once and leaving them open on the desk.</div>
+      </div>
+      <div class="walk">
+        <div class="step">
+<pre><code class="language-python">@st.cache_data(show_spinner="Loading match data...")
+def load_match_stats():
+    matches = pd.read_csv(MATCH_STATS_FILE,
+                          dtype={"match_id": str})
+    matches = matches.dropna(subset=["team"])</code></pre>
+          <div class="note">
+            <p><code>@st.cache_data</code> tells Streamlit to remember the result. Reading 129,000 rows takes a few seconds, so it happens once and is reused on every click.</p>
+            <p><code>pd.read_csv</code> turns the CSV file into a DataFrame (a table).</p>
+            <p><code>dropna</code> removes rows with no team. Those are substitute fielders who weren't in either starting XI.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">    matches["date"] = pd.to_datetime(matches["date"])
+    matches["year"] = matches["date"].dt.year
+    matches["gender_label"] = matches["gender"].map(
+        GENDER_LABELS)
+    return matches</code></pre>
+          <div class="note">
+            <p>Adds helper columns. Text like <code>"2017-02-17"</code> becomes a real date, then a <code>year</code> column is pulled out of it for the yearly charts.</p>
+            <p><code>.map(GENDER_LABELS)</code> swaps <code>"male"</code>/<code>"female"</code> for the friendlier <code>"Men"</code>/<code>"Women"</code>.</p>
+          </div>
+        </div>
+      </div>
+      <p><code>load_career_stats()</code> does the same for the career file. <code>data_files_exist()</code> checks that both files are there, so the app can show a helpful message if you forgot to run the combiner.</p>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="analysis">
+      <p class="eyebrow">dashboard/analysis.py</p>
+      <h2>The analysis</h2>
+      <div class="summary">
+        <div><b>In one sentence</b>Every calculation in the dashboard: filtering, totals, averages, rankings and comparisons.</div>
+        <div><b>Think of it as</b>The team analyst. Give them a table, ask a question, get a smaller table of answers back.</div>
+      </div>
+      <p>Every function here takes a table in and gives a table (or a few numbers) back. None of them draw anything. Keeping the maths separate means you could reuse it in a notebook or a different app.</p>
+
+      <h3>Filtering with a mask</h3>
+      <div class="walk">
+        <div class="cap"><code>filter_matches()</code>: applies the sidebar filters</div>
+        <div class="step">
+<pre><code class="language-python">first_year, last_year = year_range
+mask = (
+    matches["gender_label"].isin(genders)
+    &amp; matches["year"].between(first_year, last_year)
+)
+if teams:
+    mask &amp;= matches["team"].isin(teams)
+return matches[mask]</code></pre>
+          <div class="note">
+            <p>A <b>mask</b> is a column of True/False, one per row: "does this row pass the filter?"</p>
+            <p><code>&amp;</code> means AND: the row must match the gender <i>and</i> the years.</p>
+            <p><code>matches[mask]</code> keeps only the True rows. This is the most common pandas pattern you'll see.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Group, then summarise</h3>
+      <div class="walk">
+        <div class="cap"><code>yearly_trends()</code>: powers the Overview charts</div>
+        <div class="step">
+<pre><code class="language-python">grouped = matches.groupby(["year", "gender_label"]).agg(
+    matches=("match_id", "nunique"),
+    runs=("runs", "sum"),
+    balls=("balls_faced", "sum"),
+    fours=("fours", "sum"),
+    sixes=("sixes", "sum"),
+).reset_index()</code></pre>
+          <div class="note">
+            <p>Puts rows into piles, one pile per year per gender (2016 Men, 2016 Women, …), then summarises each pile.</p>
+            <p>Each line reads as <code>new_column=("old_column", "how")</code>. For example, <code>runs=("runs", "sum")</code> means "add up the runs column".</p>
+            <p><code>nunique</code> counts distinct values, which gives the number of matches.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">grouped["strike_rate"] = safe_ratio(
+    grouped["runs"], grouped["balls"], 100)</code></pre>
+          <div class="note">
+            <p>Works out a new column from existing ones, for every row at once. No loop needed: pandas does the whole column in one go.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Sorting batters into types</h3>
+      <div class="walk">
+        <div class="cap"><code>batter_archetypes()</code>: the Batting tab's scatter chart</div>
+        <div class="step">
+<pre><code class="language-python">median_avg = qualified["average"].median()
+median_sr = qualified["strike_rate"].median()
+
+high_avg = qualified["average"] &gt;= median_avg
+high_sr = qualified["strike_rate"] &gt;= median_sr</code></pre>
+          <div class="note">
+            <p>The <b>median</b> is the middle value: half of players are above it, half below. It's the "typical" batter.</p>
+            <p><code>high_avg</code> and <code>high_sr</code> are True/False columns: is each batter above typical?</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">qualified["archetype"] = np.select(
+    [high_avg &amp; high_sr, high_avg, high_sr],
+    ["Elite", "Anchor", "Aggressor"],
+    default="Developing",
+)</code></pre>
+          <div class="note">
+            <p><code>np.select</code> is an if / elif / else for a whole column. It checks the conditions in order and uses the first label that matches:</p>
+            <p>both high → Elite; only average high → Anchor; only strike rate high → Aggressor; neither → Developing.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>What wins matches?</h3>
+      <div class="walk">
+        <div class="cap"><code>team_innings()</code> and <code>match_winning_factors()</code>: the Teams tab</div>
+        <div class="step">
+<pre><code class="language-python">per_team = matches.groupby(["match_id", "team"]).agg(
+    gender=("gender_label", "first"),
+    won=("team_won", "max"),
+    top_score=("runs", "max"),
+    best_wickets=("wickets", "max"),
+).reset_index()</code></pre>
+          <div class="note">
+            <p>Shrinks 11 player rows into one row per team per match, recording whether they won, their top batter's score and their best bowler's wickets.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">factors = {
+    "A batter scores 50+": per_team["top_score"] &gt;= 50,
+    "A bowler takes 3+ wickets": per_team["best_wickets"] &gt;= 3,
+}</code></pre>
+          <div class="note">
+            <p>Then it compares win rates with and without each one. That's where the finding "teams with a half-centurion win 69% of the time, compared with 38%" comes from.</p>
+          </div>
+        </div>
+      </div>
+
+      <p>The other functions follow the same group-then-summarise pattern: <code>aggregate_players</code> (leaderboards), <code>team_records</code> (win rates), and the <code>player_*</code> functions for the Player tab (form over time, record against each opponent, how they get out, impact on wins).</p>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="charts">
+      <p class="eyebrow">dashboard/charts.py</p>
+      <h2>The charts</h2>
+      <div class="summary">
+        <div><b>In one sentence</b>Turns the tables from <code>analysis.py</code> into interactive Plotly charts that share one dark style.</div>
+        <div><b>Think of it as</b>The graphics team: hand them numbers and they return a finished, on-brand chart.</div>
+      </div>
+      <div class="walk">
+        <div class="step">
+<pre><code class="language-python">GENDER_COLOURS = {"Men": BLUE, "Women": ORANGE}</code></pre>
+          <div class="note">
+            <p>Each thing keeps the same colour on every chart. Men are always blue and women always orange, so you don't have to re-read the legend each time.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">def trend_line(trends, column, title, y_label):
+    fig = px.line(
+        trends, x="year", y=column,
+        color="gender_label",
+        color_discrete_map=GENDER_COLOURS,
+        markers=True,
+    )
+    # ...
+    return style_figure(fig, title)</code></pre>
+          <div class="note">
+            <p><code>px.line</code> (Plotly Express) draws a line chart from a table. You name which columns go on each axis and which column decides the colour.</p>
+            <p>One function serves all four Overview charts. Only <code>column</code> and the labels change.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">def style_figure(fig, title=None, height=380):
+    fig.update_layout(
+        paper_bgcolor=SURFACE,
+        plot_bgcolor=SURFACE,
+        font={"family": FONT, "color": TEXT_MUTED},
+        # ...
+    )
+    return fig</code></pre>
+          <div class="note">
+            <p>Every chart finishes by passing through <code>style_figure</code>, which sets the background, fonts, gridlines and legend position.</p>
+            <p>To restyle every chart at once, change this one function.</p>
+          </div>
+        </div>
+      </div>
+      <p>The other builders follow the same shape: <code>leaderboard_bar</code> (top players), <code>archetype_scatter</code> and <code>bowler_scatter</code> (dot charts), <code>team_win_bar</code>, <code>winning_factors_bar</code>, and the player charts. Each <code>hovertemplate</code> controls the text you see when your mouse is over a point.</p>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="app">
+      <p class="eyebrow">dashboard/app.py</p>
+      <h2>The app</h2>
+      <div class="summary">
+        <div><b>In one sentence</b>Builds the web page: sidebar filters, five tabs, and the metrics, charts, tables and insights inside them.</div>
+        <div><b>Think of it as</b>The match-day programme editor, deciding what goes on which page and in what order.</div>
+      </div>
+
+      <div class="callout idea">
+        <b class="tag">The one Streamlit idea to understand</b>
+        <p>Streamlit runs <code>app.py</code> from top to bottom, and <b>runs the whole file again every time you change a filter</b>. There are no "on click" handlers: each line just draws something, using whatever the filters currently say. That's why the code reads like a simple list of instructions.</p>
+      </div>
+
+      <div class="walk">
+        <div class="step">
+<pre><code class="language-python">import analysis
+import charts
+from data_loader import (load_career_stats,
+                         load_match_stats, ...)</code></pre>
+          <div class="note"><p>Brings in your other three files so their functions can be used here, for example <code>analysis.filter_matches(...)</code>.</p></div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">st.set_page_config(
+    page_title="T20I Cricket Analytics",
+    page_icon="🏏",
+    layout="wide",
+)</code></pre>
+          <div class="note"><p>Browser tab title, icon, and a full-width layout.</p></div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">all_matches = load_match_stats()
+career = load_career_stats()</code></pre>
+          <div class="note"><p>Loads the data (instantly after the first time, thanks to caching).</p></div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">with st.sidebar:
+    genders = st.multiselect("Gender", ["Men", "Women"],
+                             default=["Men", "Women"])
+    year_range = st.slider("Seasons", min_year, max_year,
+                           (min_year, max_year))
+    teams = st.multiselect("Teams (leave empty for all)",
+                           all_teams)</code></pre>
+          <div class="note">
+            <p>Everything indented under <code>with st.sidebar:</code> appears in the left sidebar.</p>
+            <p>Each widget draws a control <i>and</i> returns its current value. <code>genders</code> is whatever is ticked right now, for example <code>["Men"]</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">matches = analysis.filter_matches(
+    all_matches, genders, year_range, teams)
+players = analysis.aggregate_players(matches)</code></pre>
+          <div class="note"><p>Applies the filters once. Every tab below uses this filtered <code>matches</code> table, so all of them respond to the sidebar.</p></div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">tab_overview, tab_bat, tab_bowl, tab_teams, tab_player = st.tabs(
+    ["📈 Overview", "🏏 Batting", "🎯 Bowling",
+     "🌍 Teams", "👤 Player"]
+)</code></pre>
+          <div class="note"><p>Creates the five tabs. Code under <code>with tab_overview:</code> appears in the Overview tab, and so on.</p></div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">with tab_overview:
+    kpis = analysis.headline_kpis(matches)
+    cols = st.columns(6)
+    cols[0].metric("Matches", f"{kpis['matches']:,}")
+    # ...
+    trends = analysis.yearly_trends(matches)
+    show_chart(charts.trend_line(
+        trends, "strike_rate",
+        "Batting strike rate by year", "Strike rate"))</code></pre>
+          <div class="note">
+            <p>Each tab repeats one pattern:</p>
+            <p><b>1.</b> ask <code>analysis</code> for numbers → <b>2.</b> hand them to <code>charts</code> → <b>3.</b> show the result.</p>
+            <p><code>st.columns(6)</code> makes six side-by-side boxes for the headline numbers.</p>
+          </div>
+        </div>
+        <div class="step">
+<pre><code class="language-python">def insight(text):
+    st.markdown(f'&lt;div class="insight"&gt;💡 {text}&lt;/div&gt;',
+                unsafe_allow_html=True)</code></pre>
+          <div class="note"><p>Draws the 💡 boxes. Their text is built from live numbers, so the finding updates when you change the filters.</p></div>
+        </div>
+      </div>
+      <p>Near the top, the <code>&lt;style&gt;</code> block inside <code>st.markdown(...)</code> is CSS, the language for how web pages look. It gives the metric cards their dark background and blue edge.</p>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="small-files">
+      <h2>Settings files</h2>
+      <p>These aren't Python, but the project needs them.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>File</th><th>What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>requirements.txt</code></td><td>Lists the packages the dashboard needs (Streamlit, pandas, Plotly). <code>pip install -r requirements.txt</code> installs them all.</td></tr>
+            <tr><td><code>.streamlit/config.toml</code></td><td>The dashboard's theme: dark mode, background colours and the blue accent.</td></tr>
+            <tr><td><code>.gitignore</code></td><td>Tells git which files to leave off GitHub: the 468 MB of raw data, generated output, and the <code>.venv</code> package folder.</td></tr>
+            <tr><td><code>README.md</code></td><td>The front page of your GitHub repo, with setup steps for anyone who downloads it.</td></tr>
+            <tr><td><code>.venv/</code></td><td>A private copy of Python and the installed packages for this project only, so it can't clash with other projects.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="trace">
+      <h2>Follow one number</h2>
+      <p>Here's the journey of Virat Kohli's <b>3,963</b> career runs, from a single ball in a match file to the number on your screen.</p>
+      <ol class="trace">
+        <li>
+          <span class="where">data/t20_jsons/&lt;match&gt;.json</span>
+          A ball in a match file records <code>"batter": "V Kohli"</code> and <code>"runs": {"batter": 4}</code>.
+        </li>
+        <li>
+          <span class="where">combined stats.py → process_match()</span>
+          The ball loop runs <code>bat["runs"] += runs["batter"]</code>, so Kohli's scorecard for that match goes up by <span class="val">4</span>. It also adds one to his <code>fours</code>.
+        </li>
+        <li>
+          <span class="where">combined stats.py → build_players()</span>
+          Each match's runs are added onto his career total. After all 118 of his matches it reaches <span class="val">3963</span>.
+        </li>
+        <li>
+          <span class="where">combined stats.py → main()</span>
+          The total is written to <code>player_career_stats.csv</code> in the <code>batting_runs</code> column, alongside his per-match rows in <code>player_match_stats.csv</code>.
+        </li>
+        <li>
+          <span class="where">data_loader.py → load_career_stats()</span>
+          The dashboard reads the CSV into a table called <code>career</code>.
+        </li>
+        <li>
+          <span class="where">app.py → Player tab</span>
+          You pick Kohli. The app finds his row with <code>career[career["player_id"] == player_id]</code> and shows <code>profile["batting_runs"]</code>.
+        </li>
+        <li>
+          <span class="where">your browser</span>
+          <code>st.metric("Runs", ...)</code> displays it as <span class="val">3,963</span>.
+        </li>
+      </ol>
+      <p>His charts follow a parallel route: <code>player_match_stats.csv</code> → <code>analysis.player_innings()</code> works out his running total and recent form → <code>charts.player_form_chart()</code> draws it.</p>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="exercises">
+      <h2>Try it yourself</h2>
+      <p>Each change is small and safe. Start the dashboard, make the edit, save the file, then click <b>Rerun</b> in the top-right corner of the dashboard to see the result. If something breaks, git can undo it: <code>git checkout -- dashboard/app.py</code> restores a file to its last commit.</p>
+
+      <details>
+        <summary>1. Easy: change a starting value</summary>
+        <div>
+          <p>The Batting tab starts with "Minimum innings to qualify" at 20. Make it start at 30.</p>
+          <p><b>Where:</b> <code>app.py</code>, find <code>st.slider("Minimum innings to qualify", 5, 100, 20,</code></p>
+          <p><b>Answer:</b> the numbers are <i>minimum, maximum, starting value</i>. Change the last <code>20</code> to <code>30</code>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>2. Easy: change a colour</summary>
+        <div>
+          <p>Make the women's lines and bars purple instead of orange.</p>
+          <p><b>Where:</b> <code>charts.py</code>, the line <code>GENDER_COLOURS = {"Men": BLUE, "Women": ORANGE}</code></p>
+          <p><b>Answer:</b> replace <code>ORANGE</code> with a colour code in quotes, such as <code>"#9085e9"</code>. Every chart updates, because they all read from this one dictionary.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>3. Medium: add a headline number</summary>
+        <div>
+          <p>Add a seventh card to the Overview showing the total number of fours.</p>
+          <p><b>Step 1, in <code>analysis.py</code>:</b> inside <code>headline_kpis</code>, add a line to the dictionary:</p>
+<pre class="block"><code class="language-python">"fours": int(matches["fours"].sum()),</code></pre>
+          <p><b>Step 2, in <code>app.py</code>:</b> change <code>st.columns(6)</code> to <code>st.columns(7)</code>, then add:</p>
+<pre class="block"><code class="language-python">cols[6].metric("Fours", f"{kpis['fours']:,}")</code></pre>
+          <p>Notice how the work splits: the number is calculated in <code>analysis.py</code> and displayed in <code>app.py</code>.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>4. Harder: a new insight</summary>
+        <div>
+          <p>Use the 💡 box to show who has hit the most sixes in the filtered period, on the Batting tab.</p>
+          <p><b>Hint:</b> <code>players</code> already has a <code>sixes</code> column. <code>players.nlargest(1, "sixes")</code> gives the top row.</p>
+<pre class="block"><code class="language-python">top = players.nlargest(1, "sixes").iloc[0]
+insight(f"Most sixes: <b>{top['name']}</b> with {top['sixes']}.")</code></pre>
+          <p><code>.iloc[0]</code> means "the first row". Put this inside <code>with tab_bat:</code>, indented to line up with the code around it.</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- ================================================================ -->
+    <section id="quiz">
+      <h2>Check your understanding</h2>
+      <p>Try to answer before opening each one.</p>
+      <details>
+        <summary>Why is the combiner a separate script instead of part of the dashboard?</summary>
+        <div><p>Reading 5,845 files ball by ball is slow. Doing it once and saving the results to CSV means the dashboard only has to load two ready-made tables, which takes seconds.</p></div>
+      </details>
+      <details>
+        <summary>Players are tracked by ID, not name. Why?</summary>
+        <div><p>Two different people can share a name, for example a men's and a women's player with the same initials and surname. IDs are unique, so their stats never get mixed together.</p></div>
+      </details>
+      <details>
+        <summary>Which file would you change to make every chart taller?</summary>
+        <div><p><code>charts.py</code>, in the <code>style_figure</code> function. Its <code>height=380</code> default is used by every chart.</p></div>
+      </details>
+      <details>
+        <summary>You move the Seasons slider. What happens?</summary>
+        <div><p>Streamlit reruns <code>app.py</code> from the top. The data comes from the cache, <code>filter_matches</code> builds a new mask for the new years, and every tab recalculates and redraws from the filtered table.</p></div>
+      </details>
+      <details>
+        <summary>What does <code>safe_div</code> protect against?</summary>
+        <div><p>Dividing by zero, which crashes Python. A batter who has never been dismissed would cause one when calculating their average, so it returns <code>None</code> instead.</p></div>
+      </details>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+  // Colour the Python code blocks; the page still reads fine without it.
+  try { if (window.hljs) { hljs.highlightAll(); } } catch (e) { /* ignore */ }
+</script>
